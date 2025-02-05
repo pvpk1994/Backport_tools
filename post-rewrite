@@ -26,23 +26,23 @@ def get_repo_url(input_str):
 
 def process_commit_rewrite(old_sha, new_sha, repo):
 	print(f"Processing commit rewrite: {old_sha} -> {new_sha}")
-	
+
 	# Associate old SHA's comments with new SHA's comments
 	c = repo.get_commit(new_sha)
-	
+
 	if not commits_data[old_sha]["comment"]:
-		c.create_comment(" ")
 		return
 
 	c.create_comment(commits_data[old_sha]["comment"])
-	
+
 
 def main():
 	if len(sys.argv) > 1 and sys.argv[1] == "rebase":
+		print("Happens only for rebase")
 		global commits_data
 
 		sha_pairs = sys.stdin
-		
+
 		github_token = os.getenv("GITHUB_TOKEN")
 
 		if github_token is None:
@@ -65,31 +65,36 @@ def main():
 		if os.path.isfile(REBASE_TEMP_FILE):
 			print("Rebase done. Let's push changes...")
 			git_push = "git push --force origin"
-			subprocess.run(git_push, shell=True, capture_output=True, text=True)
+			out=subprocess.run(git_push, shell=True, capture_output=True, text=True)
+			if out.returncode != 0:
+				print("git push --force FAILED.")
+			elif out.returncode == 0:
+				for sha_pair in sha_pairs:
+					old_sha, new_sha = sha_pair.strip().split()
+					process_commit_rewrite(old_sha, new_sha, r)
 
-			for sha_pair in sha_pairs:
-				old_sha, new_sha = sha_pair.strip().split()
-				process_commit_rewrite(old_sha, new_sha, r)
+				comments = '/tmp/comments.json'
+				in_progress = '.git/rebase-in-progress'
+
+				if os.path.exists(in_progress):
+					os.remove(in_progress)
+
+				if os.path.exists(comments):
+					os.remove(comments)
+
+				sys.exit(0)
+
 
 if __name__ == "__main__":
 
-	# Check for user's rebase config 
+	# Check for user's rebase config
 	with open(REBASE_CONFIG_FILE, 'r') as f:
 		config = json.load(f)
 
 	if not config.get("hooks_enabled", True):
 		print("Custom post-rewrite hook is DISABLED as requested.")
-		#sys.exit(0)
-
-	else:
-		main()
-
-		# Perform deletion of all opened files
-		comments = '/tmp/comments.json'
-		in_progress = '.git/rebase-in-progress'
-
-		if os.path.exists(in_progress):
-			os.remove(in_progress)
-
 		sys.exit(0)
 
+	else:
+		print("Custom post-rewrite hook is ENABLED as requested.")
+		main()
