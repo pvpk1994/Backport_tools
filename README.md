@@ -14,7 +14,11 @@ However, for this project, post-rewrite hook is designed to only work for 'rebas
 
 # Steps
 
-0. Add personal Github token to the GITHUB_TOKEN env variable. 
+0. Place rebase_hook_config.json in $(pwd)/.git/
+   The user has an option to enable/disable custom rebase hooks (Pre-rebase and post-rewrite)
+   The option can be set to True (Enable) or False (Disable) in .git/rebase_hook_config.json
+
+1. Add personal Github token to the GITHUB_TOKEN env variable. 
 	
     export GITHUB_TOKEN=your_github_token
 
